@@ -9,6 +9,8 @@ Individual mod folders:
 - [josephwhite-player_skin](josephwhite-player_skins/)
 - [josephwhite-mod_manager](josephwhite-mod_manager/)
 
+apworld can be found [here](https://github.com/josephwhite/Archipelago/tree/y2roll/worlds/y2roll).
+
 ## FAQ
 
 *Q: Was AI used in the development of these mods?*
