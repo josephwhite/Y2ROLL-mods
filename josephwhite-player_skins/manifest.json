@@ -1,0 +1,35 @@
+{
+    "name": "player_skins",
+    "namespace": "josephwhite",
+    "description": "Customize the marble's appearance. Change color via a color picker or load an image from your PC.",
+    "author": "josephwhite",
+    "version_number": "1.0.0",
+    "website_url": "",
+    "license": "MIT",
+    "gd_version": {
+        "major": 3,
+        "minor": 6
+    },
+    "dependencies": [],
+    "extra": {
+        "godot": {
+            "authors": ["josephwhite"],
+            "compatible_game_version": ["1.3.1"],
+            "compatible_mod_loader_version": ["6.3.0"],
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "skin_type": {
+                        "type": "string",
+                        "title": "Skin Type",
+                        "enum": ["Default", "Solid Color", "Custom Image", "Invisible"],
+                        "default": "Default"
+                    },
+                    "color": { "type": "string", "title": "Marble Color", "default": "#ffffff", "format": "color" },
+                    "custom_texture_path": { "type": "string", "title": "Texture File Path", "default": "" },
+                    "use_filtering": { "type": "boolean", "title": "Smooth Filtering", "default": false }
+                }
+            }
+        }
+    }
+}

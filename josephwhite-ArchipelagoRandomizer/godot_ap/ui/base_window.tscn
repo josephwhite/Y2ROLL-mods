@@ -1,0 +1,9 @@
+[gd_scene format=2]
+
+[node name="Console" type="Window"]
+rect_size = Vector2(800, 500)
+rect_min_size = Vector2(400, 200)
+
+[connection signal="close_requested" from="." to="." method="queue_free"]
+
+

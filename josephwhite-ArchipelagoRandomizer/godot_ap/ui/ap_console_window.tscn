@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource type="PackedScene" path="base_window.tscn" id=1]
+[ext_resource type="PackedScene" path="common_client.tscn" id=2]
+
+[node name="Console" instance=ExtResource(1)]
+title = "Archipelago Console"
+rect_size = Vector2(1152, 648)
+rect_min_size = Vector2(750, 400)
+
+[node name="ConsoleContainer" parent="." index="0" instance=ExtResource(2)]
+
+

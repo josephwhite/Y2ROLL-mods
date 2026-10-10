@@ -1,0 +1,15 @@
+repos:
+  # GDScript Toolkit
+  - repo: https://github.com/Scony/godot-gdscript-toolkit
+    rev: 3.6.0
+    hooks:
+      - id: gdlint
+        alias: gdlint-36
+        name: gdlint (Godot 3.6)
+        description: "gdlint - linter for GDScript"
+        entry: gdlint
+        language: python
+        language_version: python3
+        additional_dependencies: [setuptools<81]
+        require_serial: true
+        types: [gdscript]

@@ -1,0 +1,16 @@
+# gdlint configuration (Godot 3.6 / gdtoolkit 3.6.0).
+
+disable:
+- class-definitions-order
+- private-method-call
+- max-line-length
+- max-file-lines
+- max-public-methods
+
+# Looser than gdtoolkit defaults: CONSTANT_CASE, and PascalCase, and leading underscores are accepted.
+class-variable-name: '([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|_*[a-zA-Z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*)'
+constant-name: '([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|_?[a-zA-Z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*)'
+excluded_directories: [".git", "addons", "josephwhite-ArchipelagoRandomizer/godot_ap"]
+function-argument-name: '_?[a-z][a-z0-9]*(_[a-z0-9]+)*_?'
+function-variable-name: '_?[a-z][a-z0-9]*(_[a-z0-9]+)*'
+signal-name: '_?[a-z][a-z0-9]*(_[a-z0-9]+)*'

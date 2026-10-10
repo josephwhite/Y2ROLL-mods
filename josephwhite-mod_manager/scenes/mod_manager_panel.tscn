@@ -1,0 +1,81 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://gui/theme_pause-menu.tres" type="Theme" id=1]
+[ext_resource path="res://gui/font_pause-menu_title.tres" type="DynamicFont" id=2]
+[ext_resource path="res://mods-unpacked/josephwhite-mod_manager/scenes/mod_manager_panel.gd" type="Script" id=3]
+[ext_resource path="res://menu_sfx_player.tscn" type="PackedScene" id=4]
+[ext_resource path="res://gui/options-menu/theme_options-menu.tres" type="Theme" id=5]
+
+[sub_resource type="InputEventAction" id=1]
+action = "ui_cancel"
+pressed = true
+
+[sub_resource type="ShortCut" id=2]
+shortcut = SubResource( 1 )
+
+[node name="ModManagerPanel" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+theme = ExtResource( 1 )
+script = ExtResource( 3 )
+
+[node name="Panel" type="Panel" parent="."]
+anchor_left = 0.01
+anchor_top = 0.01
+anchor_right = 0.99
+anchor_bottom = 0.99
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+anchor_left = 0.05
+anchor_top = 0.02
+anchor_right = 0.95
+anchor_bottom = 0.98
+
+[node name="Title" type="Label" parent="Panel/VBoxContainer"]
+size_flags_horizontal = 3
+custom_fonts/font = ExtResource( 2 )
+text = "MOD MANAGER"
+align = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource( 5 )
+follow_focus = true
+scroll_horizontal_enabled = true
+
+[node name="Buttons" type="VBoxContainer" parent="Panel/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ConfigView" type="VBoxContainer" parent="Panel/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+visible = false
+
+[node name="Footer" type="HBoxContainer" parent="Panel/VBoxContainer"]
+size_flags_horizontal = 3
+
+[node name="Spacer1" type="Control" parent="Panel/VBoxContainer/Footer"]
+size_flags_horizontal = 3
+
+[node name="StatusLabel" type="Label" parent="Panel/VBoxContainer/Footer"]
+size_flags_horizontal = 3
+
+[node name="BackButton" type="Button" parent="Panel/VBoxContainer/Footer"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+shortcut = SubResource( 2 )
+text = "Back"
+
+[node name="Spacer2" type="Control" parent="Panel/VBoxContainer/Footer"]
+size_flags_horizontal = 3
+
+[node name="MenuSFXPlayer" parent="." instance=ExtResource( 4 )]
+
+[connection signal="pressed" from="Panel/VBoxContainer/Footer/BackButton" to="MenuSFXPlayer" method="on_cancel_pressed"]

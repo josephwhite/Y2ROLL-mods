@@ -1,0 +1,10 @@
+# Staged commit message (git commit -F commit.txt)
+commit.txt
+
+# AI docs that are either trash or for personal use.
+# Anything actually relevant is either in root or excluded.
+docs/trough/*
+!docs/trough/README.md
+
+# Personal devtool: Auto repatcher
+repatch_me.ps1

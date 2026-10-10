@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource type="PackedScene" path="base_client.tscn" id=1]
+[ext_resource type="PackedScene" path="settings_tab.tscn" id=2]
+
+[node name="CommonClient" instance=ExtResource(1)]
+
+[node name="Settings" parent="Tabs" index="3" instance=ExtResource(2)]
+visible = false
+
+

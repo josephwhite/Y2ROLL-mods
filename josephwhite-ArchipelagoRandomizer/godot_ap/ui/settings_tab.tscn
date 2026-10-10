@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource type="Script" path="SettingsTab.gd" id=1]
+[ext_resource type="Script" path="theme_manager.gd" id=2]
+[ext_resource type="Script" path="theme_box.gd" id=3]
+
+[sub_resource type="ButtonGroup" id=1]
+
+[node name="Settings" type="MarginContainer"]
+theme_constants/margin_left = 0
+theme_constants/margin_top = 0
+theme_constants/margin_right = 0
+theme_constants/margin_bottom = 0
+script = ExtResource(1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+theme_constants/margin_left = 8
+theme_constants/margin_top = 8
+theme_constants/margin_right = 8
+theme_constants/margin_bottom = 8
+
+[node name="Tabs" type="TabContainer" parent="Margin"]
+
+[node name="Theme" type="MarginContainer" parent="Margin/Tabs" node_paths=PoolStringArray("themes", "default_theme")]
+theme_constants/margin_left = 6
+theme_constants/margin_top = 6
+theme_constants/margin_right = 6
+theme_constants/margin_bottom = 6
+script = ExtResource(2)
+themes = [NodePath("Row/Col1/DarkTheme"), NodePath("Row/Col1/LightTheme")]
+default_theme = NodePath("Row/Col1/DarkTheme")
+
+[node name="Row" type="HBoxContainer" parent="Margin/Tabs/Theme"]
+
+[node name="Col1" type="VBoxContainer" parent="Margin/Tabs/Theme/Row"]
+
+[node name="DarkTheme" type="CheckBox" parent="Margin/Tabs/Theme/Row/Col1"]
+pressed = true
+group = SubResource(1)
+text = "Dark Mode"
+script = ExtResource(3)
+target_theme_path = "ui/themes/dark_theme.tres"
+
+[node name="LightTheme" type="CheckBox" parent="Margin/Tabs/Theme/Row/Col1"]
+group = SubResource(1)
+text = "Light Mode"
+script = ExtResource(3)
+target_theme_path = "ui/themes/light_theme.tres"
+
+
