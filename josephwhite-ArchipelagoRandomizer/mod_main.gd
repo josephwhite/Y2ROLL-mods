@@ -3,6 +3,8 @@ extends Node
 
 const MOD_ID = "josephwhite-ArchipelagoRandomizer"
 
+const FADE_GROUP := "y2roll_ap_fade_receiver"
+
 var _mod_path: String
 
 # Current level tracking
@@ -20,6 +22,9 @@ var _chip_sig: String = ""
 var trap_manager: Node
 var check_feed: Node
 
+# Vanilla nodes/classes
+var _level_timer_node: Node = null
+
 # apworld data
 var _slot_data: Dictionary = {}
 var _level_mode: int = 0
@@ -33,8 +38,11 @@ var _trap_percentage: int = 0
 ## Mod config. Refreshed at boot and on CampaignMenu entry.
 var _config_data: Dictionary = {}
 
+# AP state tracking
 var _suppress_deathlink: bool = true
-var _level_timer_node: Node = null
+var _no_fade_received: bool = false
+var _detached_fades: Array = []
+
 var _dl_popup_layer: CanvasLayer = null
 var _dl_popup_panel: PanelContainer = null
 var _dl_popup_label: Label = null
@@ -107,6 +115,8 @@ func install_script_extensions():
 	ModLoaderMod.install_script_extension(campaign_gate_path)
 	var main_switch_path = _mod_path.plus_file("extensions/main_switch_extension.gd")
 	ModLoaderMod.install_script_extension(main_switch_path)
+	var steam_wrapper_path = _mod_path.plus_file("extensions/steam_wrapper_extension.gd")
+	ModLoaderMod.install_script_extension(steam_wrapper_path)
 
 
 #region Hooks
@@ -153,6 +163,8 @@ func _on_node_added(node: Node):
 		node.connect("tree_exiting", self, "_on_level_timer_removed", [node])
 		if node.get_parent():
 			node.get_parent().connect("reset_level_state", self, "_on_level_reset_state")
+	elif _is_fade_reciever(node):
+		_register_fade_receiver(node)
 
 
 ## Player collects a gem
@@ -201,6 +213,7 @@ func _on_goal_reached(goal_node: Node = null):
 
 func _on_player_fell_out():
 	Log.info("Player fell out of level: stage=%d level=%d" % [current_stage, current_level])
+	gem_counter = 0
 	_send_deathlink("fell out of the level.")
 	trap_manager.clear_all_traps()
 	trap_manager.deactivate_minimap()
@@ -208,6 +221,7 @@ func _on_player_fell_out():
 
 func _on_player_timeout():
 	Log.info("Player timed out: stage=%d level=%d" % [current_stage, current_level])
+	gem_counter = 0
 	_send_deathlink("ran out of time.")
 	trap_manager.clear_all_traps()
 	trap_manager.deactivate_minimap()
@@ -218,14 +232,11 @@ func _on_level_timer_removed(node: Node):
 		_level_timer_node = null
 
 
-## CampaignMenu visibility hook. `visibility_changed` is zero-arg in Godot 3 — read
-## state from _campaign_menu. The menu RE-INSTANCES per entry (node_added fires
-## each time), so world/level unlock UI is already re-applied by the discovery
-## path plus the gui_input arrow-step re-apply. This hook only owns the cached
-## config refresh and the AP tag resync, plus hiding the level-lock overlay.
+## CampaignMenu visibility hook.
 func _on_campaign_visibility_changed():
 	if _campaign_menu == null or not is_instance_valid(_campaign_menu):
 		return
+	# Refresh possible config changes
 	if _campaign_menu.visible:
 		call_deferred("_refresh_config")
 		call_deferred("_sync_ap_tags")
@@ -233,10 +244,12 @@ func _on_campaign_visibility_changed():
 		_hide_level_lock_overlay()
 
 
+## On Level Reset
 func _on_level_reset_state():
 	_suppress_deathlink = false
 
 
+## DeathLink was recieved
 func _on_ap_deathlink(source, cause, json):
 	if not (_level_timer_node and is_instance_valid(_level_timer_node) and _level_timer_node.is_enabled):
 		Log.info("AP DeathLink received but ignored (not mid-run): %s" % [json])
@@ -246,7 +259,6 @@ func _on_ap_deathlink(source, cause, json):
 	_suppress_deathlink = true
 	_level_timer_node.emit_signal("timeout")
 	# Optionally, set timer to 0 for visual
-	#_level_timer_node.set_time_remaining(0.0)
 	return
 
 #endregion
@@ -630,22 +642,25 @@ func _bootstrap_ap():
 	var ap_node = ap_scene.instance()
 	ap_node.name = "Archipelago"
 	ap_node.casus["DISABLE_BITWISE_OPERATIONS"] = true
-	ap_node.deathlink_group = ""
+	# Have to set socket buffers before adding because of a stupid timing problem.
+	ap_node.websocket_inbuffer_mb = 500
+	ap_node.websocket_outbuffer_mb = 500
 	get_tree().root.add_child(ap_node)
 	if ap_node.is_inside_tree():
-		# Client config AFTER add_child: Version.val() routes through
-		# Util._ap_load() -> _get_ap(), which needs /root/Archipelago to exist.
+		# Client config AFTER add_child vecause Version.val() routes through Util._ap_load() which needs /root/Archipelago to exist.
 		ap_node.AP_GAME_NAME = "Y2ROLL"
-		ap_node.AP_CLIENT_VERSION = Version.val(0, 1, 0)
-		ap_node.AP_VERSION = Version.val(0, 6, 7)
+		ap_node.AP_CLIENT_VERSION = Version.val(0, 0, 6)
+		ap_node.AP_VERSION = Version.val(0, 6, 8)
 		ap_node.AP_ITEM_HANDLING = ap_node.ItemHandling.ALL
 		ap_node.TRAP_LINK_ALIASES = {
+			# Taunt Trap
 			"Literature Trap": "Taunt Trap",
+			"Yap Trap": "Taunt Trap",
 		}
 		ap_node.connect("connected", self, "_on_ap_connected")
 		ap_node.connect("disconnected", self, "_on_ap_disconnected")
 		_load_connection(ap_node)
-		Log.info("Archipelago node bootstrapped at root (casus: DISABLE_BITWISE_OPERATIONS=true)")
+		Log.info("Archipelago node bootstrapped at root")
 	else:
 		Log.error("Archipelago node failed to enter the tree")
 
@@ -655,8 +670,6 @@ func _load_connection(ap_node):
 	if not file:
 		return
 	if not ap_node.creds.read(file):
-		# Pre-T3 connection.dat had 3 lines (no password); reading the 4th line
-		# hits EOF and read() fails. Fall back to the legacy 3-line format.
 		file.seek(0)
 		ap_node.creds.update(
 			file.get_line(), file.get_line(),
@@ -763,6 +776,8 @@ func _on_ap_disconnected():
 	_world_access = [false, false, false, false, false, false, false]
 	_level_mode = 0
 	_unlocked_levels = {}
+	_no_fade_received = false
+	_restore_fade_on()
 	_hide_deathlink_popup()
 	_apply_world_unlocks()
 	return
@@ -809,6 +824,10 @@ func _on_ap_items(items):
 		else:
 			check_feed.upsert_received(item.loc_id, text, cls)
 		# Apply item
+		if name == "Timer Refill":
+			_on_ap_timer_refill()
+		if name == "No Fade":
+			_on_ap_item_no_fade()
 		if _item_in_group(name, "Traps"):
 			_on_ap_item_trap(name)
 		if _item_in_group(name, "World Access"):
@@ -817,6 +836,103 @@ func _on_ap_items(items):
 			var m = _level_access_re.search(name)
 			if m:
 				_on_ap_item_level_access(m)
+
+
+## A Timer Refill was recieved
+func _on_ap_timer_refill():
+	if (_level_timer_node and is_instance_valid(_level_timer_node) and _level_timer_node.is_enabled):
+		_level_timer_node.set_time_remaining(99.99)
+		_flash_timer_green()
+
+
+## Briefly tint the timer label to confirm a refill.
+func _flash_timer_green():
+	var label = _get_timer_label()
+	if not label:
+		return
+	var prev_color: Color = label.modulate
+	label.set_modulate(Color.green)
+	var timer := get_tree().create_timer(1.0)
+	timer.connect("timeout", self, "_restore_timer_modulate", [label, prev_color])
+
+
+## Gets the HUD level timer label.
+## Returns null if the level timer is absent.
+func _get_timer_label():
+	if not (_level_timer_node and is_instance_valid(_level_timer_node)):
+		return null
+	var level_root = _level_timer_node.get_parent()
+	if level_root:
+		return level_root.get_node_or_null("%TimerValue")
+	return null
+
+
+func _restore_timer_modulate(label, prev_color: Color):
+	if is_instance_valid(label):
+		label.set_modulate(prev_color)
+
+
+## Is this node a FadeReciever (child of an FR_* fade-material mesh)?
+func _is_fade_reciever(node: Node) -> bool:
+	if not (node.get_parent() and node.get_parent().name.begins_with("FR_")):
+		return false
+	var s = node.get_script()
+	return s != null and str(s.resource_path).get_file().begins_with("fade_reciever.")
+
+
+## Track a FadeReciever so we can freeze its fade when "No Fade" is active.
+func _register_fade_receiver(receiver: Node):
+	if not receiver.is_in_group(FADE_GROUP):
+		receiver.add_to_group(FADE_GROUP)
+	if _no_fade_received:
+		call_deferred("_detach_fade_receiver", receiver)
+
+
+## Pin a fade platform's shared material fully visible.
+func _pin_fade_material(mesh: Node):
+	if mesh is MeshInstance:
+		var mat = mesh.get_surface_material(0)
+		if mat is ShaderMaterial:
+			mat.set_shader_param("fade_weight", 1.0)
+
+
+## Detach the FadeReciever from the tree so its _process can't overwrite the pinned fade param.
+## `set_process(false)` is undone by the engine, but an out-of-tree node never processes.
+## The mesh's meta holds the receiver alive and frees it with the mesh.
+func _detach_fade_receiver(receiver: Node):
+	if not is_instance_valid(receiver) or not _no_fade_received:
+		return
+	var mesh = receiver.get_parent()
+	if mesh == null:
+		return
+	mesh.set_meta(FADE_GROUP, receiver)
+	_pin_fade_material(mesh)
+	mesh.remove_child(receiver)
+	if not _detached_fades.has(receiver):
+		_detached_fades.append(receiver)
+
+
+## Let every detached FadeReciever resume to normal.
+func _restore_fade_on():
+	for receiver in _detached_fades:
+		if not is_instance_valid(receiver):
+			continue
+		var mesh = receiver.get_meta(FADE_GROUP) if receiver.has_meta(FADE_GROUP) else null
+		if mesh != null and is_instance_valid(mesh) and not receiver.is_inside_tree():
+			mesh.add_child(receiver)
+		else:
+			receiver.free()
+	_detached_fades.clear()
+
+
+## A "No Fade item" was received.
+func _on_ap_item_no_fade():
+	if _no_fade_received:
+		return
+	_no_fade_received = true
+	Log.info("No Fade received: fade platforms stay visible")
+	for receiver in get_tree().get_nodes_in_group(FADE_GROUP):
+		_detach_fade_receiver(receiver)
 
 
 ## A trap item was recieved

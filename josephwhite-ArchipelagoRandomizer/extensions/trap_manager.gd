@@ -1,5 +1,5 @@
 extends Node
-
+## Manager of traps
 
 # Smile Trap(s)
 var _speed_label: Label = null

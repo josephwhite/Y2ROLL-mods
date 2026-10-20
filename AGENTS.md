@@ -29,6 +29,26 @@ Log locations (`user://` = Godot app data dir):
 - Windows: `%APPDATA%\Godot\app_userdata\Y2ROLL\logs\godot.log`
 - Linux: `~/.local/share/godot/app_userdata/Y2ROLL/logs/godot.log`
 
+## Tools
+
+- `pwsh`
+- [`pre-commit`](pre-commit-config.yaml)
+
+### Commands
+#### pre-commit
+```bash
+# Setup pre-commit
+pip install pre-commit
+pre-commit install
+pre-commit install-hooks # pre-build the gdtoolkit 3.6.0 env
+
+# Run pre-commit
+pre-commit run
+```
+#### Packaging mods to zip
+```ps1
+.\build.ps1
+```
 ## Critical Constraints
 
 - Godot 3 export build never loads from the unpacked tree. All mod files must be injected into the PCK via `patch_pck.py`.
@@ -46,7 +66,7 @@ Archipelago integration mod for Y2ROLL.
 
 **GodotAP embed**:
 - Vendored from [repo](https://github.com/josephwhite/GodotAP/commits/downpatch-3.6.0/)
-    - Current commit pinned: `e55b856`
+    - Current commit pinned: `05da351`
 - **Do NOT hand-patch the vendored `godot_ap/`** — it is a byte copy of upstream so future pulls apply cleanly. Re-sync from a real SHA and re-verify hashes on every pull.
     - No local edits here. Report bugs/feature asks to upstream or change vendor source.
 - **Bootstrap** — `call_deferred("_bootstrap_ap")` adds an `archipelago.tscn` instance as a **direct root child** named `"Archipelago"` (mod nodes live under `ModLoader`, so `self.add_child` fails `Util._get_ap()`'s root lookup). Deferred because sync `root.add_child` in `_ready()` hits root's blocked state (node.cpp:1328) and silently drops the node. Logs `is_inside_tree()` success/failure.
@@ -61,7 +81,6 @@ Archipelago integration mod for Y2ROLL.
 - **CampaignMenu focus model** — single-Control focus UI (`set_is_menu_open()` → `self.grab_focus()`). Panel root must set `focus_mode = ALL` + grab focus on open, else Esc closes the campaign menu behind the overlay. `hide` → parent `grab_focus()`; `visibility_changed` auto-hides panel. Esc while a LineEdit has focus: first Esc releases it, second closes.
 - Views — disconnected: 4 fields + Connect/Disconnect/Back, status from `connect_step`, errors from `connectionrefused`. Connected (button reads `AP✓`): fields hidden, Disconnect enabled.
 - All LineEdits `text_entered` → `_on_connect_pressed`. Disconnected idle StatusLabel shows "Enter server details, then press CONNECT." hint.
-- **World unlock gating** — all 7 worlds locked until `[<World> Access]` item received; `_on_ap_item_access` maps access name → index (order: Purple Mountains, Deep Sea, Chilly Culdesac, Downtown City, Molten Crag, Starry Space, Empyrean, index 0–6) and flips `_unlocked_worlds`. Purple Mountains Access is a **starting grant** → world 1 auto-unlocks on connect via `obtained_items` replay. No persistence (reconstructs on reconnect). Lock message reads `%ItemTitle`; arrow-step re-applies via `gui_input`.
 
 ### Key facts
 

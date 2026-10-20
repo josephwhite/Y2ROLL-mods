@@ -1,3 +1,6 @@
+# Python stuff
+__pycache__/
+
 # Staged commit message (git commit -F commit.txt)
 commit.txt
 
@@ -8,3 +11,6 @@ docs/trough/*
 
 # Personal devtool: Auto repatcher
 repatch_me.ps1
+
+# Personal devtool: packager
+dist/*

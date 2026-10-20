@@ -1,5 +1,5 @@
 extends Node
-
+## Menu showing Archipelago items being sent and recieved.
 
 const MAX_ENTRIES = 8
 
@@ -24,8 +24,6 @@ var _connected: bool = false
 
 
 ## Build the feed layer once at boot, well before any AP connect/catchup frame.
-## root.add_child during a connect frame is a documented native crash cell; the
-## layer and every row must exist before the connection lifecycle touches us.
 func _ready():
 	call_deferred("_boot_layer")
 
@@ -76,7 +74,10 @@ func upsert_received_key(p_key, text, cls):
 
 func _defer(kind, loc_id, text, cls):
 	_pending.append({
-		"kind": kind, "loc_id": loc_id, "text": text, "cls": cls
+		"kind": kind,
+		"loc_id": loc_id,
+		"text": text,
+		"cls": cls
 	})
 	if _flush_scheduled:
 		return
