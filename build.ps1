@@ -25,7 +25,7 @@ $dist_files += Get-Item -Path $([System.IO.Path]::Combine($PSScriptRoot, "LICENS
 # Etc.
 $dest_output = [System.IO.Path]::Combine($dest_folder, "Y2ROLL-mods.zip")
 
-$dist_files | Compress-Archive -DestinationPath $dest_output -CompressionLevel "Optimal"
+$dist_files | Compress-Archive -DestinationPath $dest_output -CompressionLevel "Optimal" -Update
 Write-Debug -Message "Mods packaged: $dest_output"
 
 exit 0
